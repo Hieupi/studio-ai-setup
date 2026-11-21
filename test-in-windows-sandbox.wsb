@@ -1,0 +1,12 @@
+<Configuration>
+  <VGpu>Default</VGpu>
+  <Networking>Enable</Networking>
+  <MemoryInMB>8192</MemoryInMB>
+  <MappedFolders>
+    <MappedFolder>
+      <HostFolder>D:\Open-Creator-Setup\dist\Studio-AI-Setup-v1.0.0</HostFolder>
+      <SandboxFolder>C:\Users\WDAGUtilityAccount\Desktop\Studio-AI-Setup</SandboxFolder>
+      <ReadOnly>true</ReadOnly>
+    </MappedFolder>
+  </MappedFolders>
+</Configuration>

@@ -1,0 +1,202 @@
+{
+  "schema_version": 1,
+  "app_name": "Studio AI Setup",
+  "app_version": "1.0.0",
+  "reviewed_at": "2026-11-21",
+  "lot0_core": {
+    "python": {
+      "winget_id": "Python.Python.3.12",
+      "version": "3.12.10",
+      "min_version": "3.10.0",
+      "direct_url": "https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe",
+      "direct_sha256": "67b5635e80ea51072b87941312d00ec8927c4db9ba18938f7ad2d27b328b95fb",
+      "install_kind": "python_exe",
+      "license": "PSF-2.0",
+      "source": "https://www.python.org/"
+    },
+    "uv": {
+      "winget_id": "astral-sh.uv",
+      "version": "0.13.9",
+      "direct_url": "https://github.com/astral-sh/uv/releases/download/0.13.9/uv-x86_64-pc-windows-msvc.zip",
+      "direct_sha256": "edd61f7f5728a56cc62455386661860bdfc7bab65872f39b0c25bdcc1d8e1beb",
+      "install_kind": "bin_zip",
+      "license": "MIT OR Apache-2.0",
+      "source": "https://github.com/astral-sh/uv"
+    },
+    "node": {
+      "winget_id": "OpenJS.NodeJS.LTS",
+      "version": "24.22.3",
+      "engine_constraint": "^22.23.4 || ^24.22.1 || >=26.12.1",
+      "direct_url": "https://nodejs.org/dist/v24.22.3/node-v24.22.3-win-x64.zip",
+      "direct_sha256": "e612af99f626ab415ea225af6bce5c971feb448cb5cae250bb1c3fa50c5f7d9f",
+      "install_kind": "node_zip",
+      "license": "MIT",
+      "source": "https://nodejs.org/"
+    },
+    "git": {
+      "winget_id": "Git.Git",
+      "version": "2.56.1",
+      "direct_url": "https://github.com/git-for-windows/git/releases/download/v2.56.1.windows.1/Git-2.56.1-64-bit.exe",
+      "direct_sha256": "c330c72e10b408cc39994bfefdb63542b0d93d21699325c3e0bd874af8a5a559",
+      "install_kind": "git_exe",
+      "license": "GPL-2.0",
+      "source": "https://git-scm.com/"
+    },
+    "gh": {
+      "winget_id": "GitHub.cli",
+      "version": "2.105.0",
+      "direct_url": "https://github.com/cli/cli/releases/download/v2.105.0/gh_2.105.0_windows_amd64.zip",
+      "direct_sha256": "8813a72c899900afaa10e3fec8fbc64b908c89dbfe837e95ed2fa500fc140627",
+      "install_kind": "bin_zip",
+      "license": "MIT",
+      "source": "https://cli.github.com/"
+    }
+  },
+  "lot1_content": {
+    "vietnamese_humanizer": {
+      "repo": "https://github.com/longhang2004/vietnamese-humanizer",
+      "commit": "2fd7dd05cbd9c2b977bda9f5a0bcae301ffa5376",
+      "archive_url": "https://codeload.github.com/longhang2004/vietnamese-humanizer/zip/2fd7dd05cbd9c2b977bda9f5a0bcae301ffa5376",
+      "license": "MIT",
+      "allowlist_paths": [
+        "skills/humanizer-vi",
+        "skills/translationese-cleaner-vi",
+        "src",
+        "patterns",
+        "pyproject.toml"
+      ],
+      "forbid_paths": [
+        "impeccable",
+        "web"
+      ],
+      "python_deps": [
+        "jsonschema==4.23.0",
+        "PyYAML==6.0.2"
+      ]
+    }
+  },
+  "lot2_video": {
+    "ffmpeg": {
+      "winget_id": "Gyan.FFmpeg",
+      "version": "9.1",
+      "direct_url": "https://github.com/GyanD/codexffmpeg/releases/download/9.1/ffmpeg-9.1-essentials_build.zip",
+      "direct_sha256": "b9bbbb3acece000cbeec994f856649354e52c773807841e78908374b24d658fd",
+      "install_kind": "bin_zip",
+      "license": "GPL-3.0 / LGPL-2.1",
+      "source": "https://ffmpeg.org/"
+    },
+    "auto_editor": {
+      "pypi_spec": "auto-editor==29.3.1",
+      "license": "Unlicense",
+      "source": "https://github.com/WyattBlue/auto-editor"
+    },
+    "ffmpeg_skill": {
+      "npm_spec": "ffmpeg-skill@3.8.16",
+      "license": "MIT",
+      "source": "https://github.com/kajisho5/ffmpeg-skill"
+    },
+    "editatlas_skills": {
+      "repo": "https://github.com/EditAtlas/skills",
+      "commit": "75cee479db213ddd05cb5ceeeacd5c468419f443",
+      "archive_url": "https://codeload.github.com/EditAtlas/skills/zip/75cee479db213ddd05cb5ceeeacd5c468419f443",
+      "license": "MIT",
+      "allowlist_skills": [
+        "sound-design",
+        "media-picker"
+      ],
+      "forbid_paths": [
+        "evals",
+        "video-breakdown",
+        "editable-export",
+        "transcribe"
+      ],
+      "enable_mcp": false
+    },
+    "rea_video": {
+      "repo": "https://github.com/JuneYaooo/rea-video",
+      "commit": "b08faf2eb53690fc92ddf94576a8c7c3a4a87f89",
+      "archive_url": "https://codeload.github.com/JuneYaooo/rea-video/zip/b08faf2eb53690fc92ddf94576a8c7c3a4a87f89",
+      "license": "MIT"
+    },
+    "media_python_deps": [
+      "numpy",
+      "pillow",
+      "opencv-python",
+      "soundfile",
+      "scipy",
+      "pyyaml",
+      "openpyxl"
+    ],
+    "optional_openmontage": {
+      "repo": "https://github.com/calesthio/OpenMontage",
+      "commit": "2e003e65fa99",
+      "license": "AGPL-3.0",
+      "default_enabled": false,
+      "note": "Tùy chọn nâng cao · Studio dựng video AI tự động (~500 MB + cần API)"
+    },
+    "optional_assetfurnace": {
+      "repo": "https://github.com/Bingeljell/image-to-3dlab",
+      "commit": "a319975821a6",
+      "license": "Apache-2.0",
+      "default_enabled": false,
+      "requires_nvidia_gpu": true,
+      "note": "Tùy chọn 3D · Tạo nhân vật 3D có xương cục bộ (Chỉ bật khi máy có card đồ họa NVIDIA RTX)"
+    }
+  },
+  "lot3_code": {
+    "superpowers": {
+      "repo": "https://github.com/obra/superpowers.git",
+      "commit": "22f0b463e7a5e579904dd6211a520321035526f7",
+      "archive_url": "https://codeload.github.com/obra/superpowers/zip/22f0b463e7a5e579904dd6211a520321035526f7",
+      "license": "MIT"
+    },
+    "karpathy_guidelines": {
+      "repo": "https://github.com/multica-ai/andrej-karpathy-skills",
+      "commit": "2c606141936f1eeef17fa3043a72095b4765b9c2",
+      "raw_url": "https://raw.githubusercontent.com/multica-ai/andrej-karpathy-skills/2c606141936f1eeef17fa3043a72095b4765b9c2/skills/karpathy-guidelines/SKILL.md",
+      "expected_sha256": "6e22cc54cb02a5e98ae42d06d9d7292db0c1b43894831b32879beb0166b2aea7",
+      "license": "MIT"
+    },
+    "modern_web_guidance": {
+      "npm_spec": "modern-web-guidance@1.0.1",
+      "version": "1.0.1",
+      "license": "Apache-2.0",
+      "source": "https://developer.chrome.com/docs/modern-web-guidance",
+      "repo": "https://github.com/GoogleChrome/modern-web-guidance-src"
+    },
+    "dev_tools": [
+      "ruff==0.17.6",
+      "pytest==9.2.0"
+    ]
+  },
+  "lot4_data": {
+    "rea_agents": {
+      "npm_spec": "rea-agents@6.10.1",
+      "version": "6.10.1",
+      "license": "MIT",
+      "source": "https://www.npmjs.com/package/rea-agents"
+    },
+    "yt_dlp": {
+      "pypi_spec": "yt-dlp==2026.10.26",
+      "license": "Unlicense",
+      "source": "https://github.com/yt-dlp/yt-dlp"
+    },
+    "trendspyg": {
+      "pypi_spec": "trendspyg==1.9.0",
+      "license": "MIT",
+      "source": "https://github.com/flack0x/trendspyg"
+    },
+    "markitdown": {
+      "pypi_spec": "markitdown==0.1.9",
+      "license": "MIT",
+      "source": "https://github.com/microsoft/markitdown"
+    },
+    "optional_agent_reach": {
+      "repo": "https://github.com/Panniantong/Agent-Reach",
+      "commit": "c70ae6da5d39",
+      "license": "MIT",
+      "default_enabled": false,
+      "note": "Tùy chọn nâng cao · Router tìm kiếm đa nền tảng"
+    }
+  }
+}

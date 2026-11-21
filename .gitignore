@@ -1,0 +1,15 @@
+dist/
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.env
+.env.*
+*.log
+*.tmp
+*.bak
+*.bak-*
+.pytest_cache/
+.ruff_cache/
