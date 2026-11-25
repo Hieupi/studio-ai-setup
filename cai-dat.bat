@@ -20,6 +20,7 @@ chcp 65001 >nul 2>&1
 echo ============================================================================
 echo  Khong tim thay PowerShell tren may nay; dang chuyen sang che do chu.
 echo ============================================================================
+set "PYTHONIOENCODING=utf-8"
 set "PYTHONUTF8=1"
 set "PYTHONDONTWRITEBYTECODE=1"
 where python >nul 2>&1

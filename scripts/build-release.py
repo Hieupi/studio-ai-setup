@@ -1,27 +1,30 @@
 #!/usr/bin/env python3
 """Studio AI Setup — Clean Release Packager & AK Kit V3 Security Sanitizer.
 
-Stages ONLY the verified allowlist into dist/Studio-AI-Setup-v1.0.0/, runs
-multi-layer secrets, PII, internal path, zero-brand, dangerous-file, and code-security
-audits, and emits Studio-AI-Setup-v1.0.0.zip + SECURITY-AUDIT.md only on 0 CRITICAL.
+Stages ONLY the verified allowlist into dist/Studio-AI-Setup-v<version>/, verifies
+cross-file version parity, runs multi-layer secrets, PII, internal path, zero-brand,
+dangerous-file, and code-security audits, and emits a deterministic reproducible
+Studio-AI-Setup-v<version>.zip + SHA256SUMS.txt + SECURITY-AUDIT.md only on 0 CRITICAL.
 """
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timezone
+import datetime as _dt
 import hashlib
-import os
-from pathlib import Path
+import json
 import re
 import shutil
 import sys
 import zipfile
+from datetime import datetime
+from pathlib import Path
 from typing import Any
 
+_UTC = getattr(_dt, "UTC", None) or _dt.timezone(_dt.timedelta(0))
+
 ROOT = Path(__file__).resolve().parents[1]
-APP_VERSION = "1.0.0"
-RELEASE_NAME = f"Studio-AI-Setup-v{APP_VERSION}"
 MAX_ZIP_BYTES = 500 * 1024
+REPRODUCIBLE_ZIP_DATE = (2026, 11, 25, 0, 0, 0)
 
 ALLOWLIST_FILES = (
     "cai-dat.bat",
@@ -43,6 +46,7 @@ ALLOWLIST_FILES = (
     "chi-dan/02-lo-edit-video.md",
     "chi-dan/03-lo-code.md",
     "chi-dan/04-lo-cao-du-lieu.md",
+    "chi-dan/05-lo-phan-bien-egm.md",
 )
 
 TEXT_EXTENSIONS = {".py", ".ps1", ".bat", ".cmd", ".md", ".json", ".txt", ".yml", ".yaml", ".toml"}
@@ -79,8 +83,8 @@ BRAND_AND_SAFETY_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
         "kaze" + "lab",
     ]) + r")\b")),
     ("Personal identity leak", re.compile(r"(?i)\b(?:" + "|".join([
-        "b\u1ed1 t\u00fa",
-        "\u0111\u1ea1i ca",
+        "b\u1ed1" + " t\u00fa",
+        "\u0111\u1ea1i" + " ca",
     ]) + r")\b")),
     ("Red-team / evasion leak", re.compile(r"(?i)(?:" + "|".join([
         "filter-by" + "pass",
@@ -102,6 +106,114 @@ DANGEROUS_FILENAMES = {
 }
 DANGEROUS_SUFFIXES = (".pem", ".key", ".p12", ".pfx", ".jks", ".exe", ".dll", ".map")
 DANGEROUS_DIRS = {".git", ".secrets", "secrets", "node_modules", "__pycache__", ".venv", "venv", "sessions"}
+
+
+def load_app_version(src_root: Path = ROOT) -> str:
+    """Read app_version from catalog-lock.json as the single source of truth."""
+    catalog_path = src_root / "catalog-lock.json"
+    if not catalog_path.is_file():
+        raise FileNotFoundError(f"catalog-lock.json missing: {catalog_path}")
+    data = json.loads(catalog_path.read_text(encoding="utf-8-sig"))
+    version = data.get("app_version") if isinstance(data, dict) else None
+    if not isinstance(version, str) or not version.strip():
+        raise ValueError(f"Missing or invalid app_version in {catalog_path}")
+    return version.strip()
+
+
+APP_VERSION = load_app_version(ROOT)
+RELEASE_NAME = f"Studio-AI-Setup-v{APP_VERSION}"
+
+
+def check_version_parity(src_root: Path, expected_version: str) -> list[dict[str, Any]]:
+    """Verify catalog-lock.json, README.md, and test-in-windows-sandbox.wsb match expected_version."""
+    findings: list[dict[str, Any]] = []
+    expected = expected_version.strip()
+
+    # 1. catalog-lock.json
+    cat_path = src_root / "catalog-lock.json"
+    if not cat_path.is_file():
+        findings.append({
+            "severity": "CRITICAL",
+            "category": "Version Parity",
+            "file": "catalog-lock.json",
+            "line": 0,
+            "detail": "Missing catalog-lock.json",
+        })
+    else:
+        try:
+            cat_data = json.loads(cat_path.read_text(encoding="utf-8-sig"))
+            actual_ver = cat_data.get("app_version") if isinstance(cat_data, dict) else None
+            if actual_ver != expected:
+                findings.append({
+                    "severity": "CRITICAL",
+                    "category": "Version Parity",
+                    "file": "catalog-lock.json",
+                    "line": 1,
+                    "detail": f"app_version={actual_ver!r} != expected {expected!r}",
+                })
+        except (OSError, ValueError) as exc:
+            findings.append({
+                "severity": "CRITICAL",
+                "category": "Version Parity",
+                "file": "catalog-lock.json",
+                "line": 0,
+                "detail": f"Invalid JSON: {exc}",
+            })
+
+    # 2. README.md first heading
+    readme_path = src_root / "README.md"
+    expected_heading = f"# Studio AI Setup v{expected}"
+    if not readme_path.is_file():
+        findings.append({
+            "severity": "CRITICAL",
+            "category": "Version Parity",
+            "file": "README.md",
+            "line": 0,
+            "detail": "Missing README.md",
+        })
+    else:
+        lines = readme_path.read_text(encoding="utf-8-sig").splitlines()
+        first_heading = next(((idx, ln.strip()) for idx, ln in enumerate(lines, 1) if ln.strip().startswith("#")), None)
+        if first_heading is None:
+            findings.append({
+                "severity": "CRITICAL",
+                "category": "Version Parity",
+                "file": "README.md",
+                "line": 1,
+                "detail": f"Missing top heading; expected {expected_heading!r}",
+            })
+        elif first_heading[1] != expected_heading:
+            findings.append({
+                "severity": "CRITICAL",
+                "category": "Version Parity",
+                "file": "README.md",
+                "line": first_heading[0],
+                "detail": f"Heading {first_heading[1]!r} != expected {expected_heading!r}",
+            })
+
+    # 3. test-in-windows-sandbox.wsb (kept OUT of ALLOWLIST_FILES, checked in src_root)
+    wsb_path = src_root / "test-in-windows-sandbox.wsb"
+    expected_wsb_token = f"Studio-AI-Setup-v{expected}"
+    if not wsb_path.is_file():
+        findings.append({
+            "severity": "CRITICAL",
+            "category": "Version Parity",
+            "file": "test-in-windows-sandbox.wsb",
+            "line": 0,
+            "detail": "Missing test-in-windows-sandbox.wsb",
+        })
+    else:
+        wsb_text = wsb_path.read_text(encoding="utf-8-sig")
+        if expected_wsb_token not in wsb_text:
+            findings.append({
+                "severity": "CRITICAL",
+                "category": "Version Parity",
+                "file": "test-in-windows-sandbox.wsb",
+                "line": 1,
+                "detail": f"Expected {expected_wsb_token!r} in HostFolder path",
+            })
+
+    return findings
 
 
 def audit_directory(target_root: Path) -> dict[str, Any]:
@@ -184,23 +296,50 @@ def stage_release(src_root: Path, stage_dir: Path) -> int:
     return copied
 
 
-def create_zip(stage_dir: Path, zip_path: Path) -> tuple[int, str]:
-    """Create clean release ZIP and return (size_bytes, sha256_hex)."""
+def create_zip(stage_dir: Path, zip_path: Path, release_name: str | None = None) -> tuple[int, str]:
+    """Create byte-for-byte deterministic reproducible ZIP and return (size_bytes, sha256_hex)."""
+    prefix = release_name or RELEASE_NAME
     if zip_path.exists():
         zip_path.unlink()
+    files = sorted(
+        (p for p in stage_dir.rglob("*") if p.is_file()),
+        key=lambda p: p.relative_to(stage_dir).as_posix(),
+    )
     with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
-        for file_path in sorted(p for p in stage_dir.rglob("*") if p.is_file()):
-            arcname = f"{RELEASE_NAME}/{file_path.relative_to(stage_dir).as_posix()}"
-            zf.write(file_path, arcname=arcname)
+        for file_path in files:
+            arcname = f"{prefix}/{file_path.relative_to(stage_dir).as_posix()}"
+            zi = zipfile.ZipInfo(arcname, date_time=REPRODUCIBLE_ZIP_DATE)
+            zi.compress_type = zipfile.ZIP_DEFLATED
+            zi.create_system = 3
+            zi.external_attr = 0o644 << 16
+            zf.writestr(
+                zi,
+                file_path.read_bytes(),
+                compress_type=zipfile.ZIP_DEFLATED,
+                compresslevel=9,
+            )
     raw = zip_path.read_bytes()
     return len(raw), hashlib.sha256(raw).hexdigest()
 
 
-def write_audit_report(report_path: Path, audit: dict[str, Any], zip_path: Path | None, zip_size: int, zip_sha256: str) -> None:
+def write_sha256sums(sums_path: Path, zip_path: Path, zip_sha256: str) -> None:
+    """Write standard UTF-8 LF SHA256SUMS.txt for the release archive."""
+    sums_path.write_bytes(f"{zip_sha256}  {zip_path.name}\n".encode())
+
+
+def write_audit_report(
+    report_path: Path,
+    audit: dict[str, Any],
+    zip_path: Path | None,
+    zip_size: int,
+    zip_sha256: str,
+    release_name: str | None = None,
+) -> None:
     """Write human-readable AK Kit V3 SECURITY-AUDIT.md summary."""
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    rel_label = release_name or RELEASE_NAME
+    now = datetime.now(_UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
     lines = [
-        f"# Security & Sanitization Audit Report — {RELEASE_NAME}",
+        f"# Security & Sanitization Audit Report — {rel_label}",
         "",
         f"- **Generated:** `{now}`",
         f"- **Scanned Files:** `{audit['scanned_files']}`",
@@ -221,6 +360,7 @@ def write_audit_report(report_path: Path, audit: dict[str, Any], zip_path: Path 
     else:
         lines.extend([
             "## Checks Passed",
+            "- Version parity check (`catalog-lock.json`, `README.md`, `test-in-windows-sandbox.wsb`): **0 findings**",
             "- Secrets scan (API keys, AWS, DB URLs, JWT, private keys, GitHub/Google tokens): **0 findings**",
             "- PII & internal machine paths scan (`C:\\Users\\...`, internal drives, personal emails): **0 findings**",
             "- Zero-brand & safety scan (zero proprietary branding, zero evasion/red-team terms): **0 findings**",
@@ -238,34 +378,49 @@ def main(argv: list[str] | None = None) -> int:
             pass
     parser = argparse.ArgumentParser(description="Build clean Studio AI Setup ZIP with AK Kit V3 security audit")
     parser.add_argument("--out-dir", type=Path, default=ROOT / "dist", help="Output directory (default: dist/)")
+    parser.add_argument("--src-root", type=Path, default=ROOT, help="Source repository root (default: repo root)")
     args = parser.parse_args(argv)
 
+    src_root = args.src_root.resolve()
+    app_version = load_app_version(src_root)
+    release_name = f"Studio-AI-Setup-v{app_version}"
+
     out_dir = args.out_dir.resolve()
-    stage_dir = out_dir / RELEASE_NAME
-    zip_path = out_dir / f"{RELEASE_NAME}.zip"
+    stage_dir = out_dir / release_name
+    zip_path = out_dir / f"{release_name}.zip"
+    sums_path = out_dir / "SHA256SUMS.txt"
     audit_path = out_dir / "SECURITY-AUDIT.md"
 
-    copied = stage_release(ROOT, stage_dir)
+    copied = stage_release(src_root, stage_dir)
     audit = audit_directory(stage_dir)
+    parity_findings = check_version_parity(src_root, app_version)
+    if parity_findings:
+        audit["findings"].extend(parity_findings)
+        audit["critical_count"] = sum(1 for f in audit["findings"] if f["severity"] == "CRITICAL")
+        audit["verdict"] = "PASS" if audit["critical_count"] == 0 else "FAIL"
 
     if audit["critical_count"] > 0:
-        write_audit_report(audit_path, audit, None, 0, "")
+        write_audit_report(audit_path, audit, None, 0, "", release_name=release_name)
         print(f"SECURITY AUDIT FAILED: {audit['critical_count']} critical finding(s):", file=sys.stderr)
         for f in audit["findings"]:
             print(f"  - [{f['category']}] {f['file']}:{f['line']} -> {f['detail']}", file=sys.stderr)
         return 1
 
-    zip_size, zip_sha256 = create_zip(stage_dir, zip_path)
+    zip_size, zip_sha256 = create_zip(stage_dir, zip_path, release_name=release_name)
     if zip_size > MAX_ZIP_BYTES:
+        if zip_path.exists():
+            zip_path.unlink()
         print(f"ERROR: Release ZIP exceeded {MAX_ZIP_BYTES} bytes ({zip_size} bytes).", file=sys.stderr)
         return 1
 
-    write_audit_report(audit_path, audit, zip_path, zip_size, zip_sha256)
+    write_sha256sums(sums_path, zip_path, zip_sha256)
+    write_audit_report(audit_path, audit, zip_path, zip_size, zip_sha256, release_name=release_name)
     print(f"Staged files : {copied}")
     print(f"Audit verdict: {audit['verdict']} ({audit['critical_count']} CRITICAL)")
     print(f"Archive path : {zip_path}")
     print(f"Archive size : {zip_size:,} bytes ({zip_size / 1024:.1f} KB)")
     print(f"Archive SHA256: {zip_sha256}")
+    print(f"SHA256SUMS   : {sums_path}")
     return 0
 
 

@@ -1,5 +1,5 @@
 ﻿# Trinh tai va cai dat truc tiep cac nen tang chinh thuc (khong phu thuoc Winget).
-# Kiem tra bat buoc HTTPS + SHA-256 tu catalog-lock.json cho tung goi.
+# Kiem tra bat buoc HTTPS + SHA-256 tu catalog-lock.json + chu ky so Authenticode (.exe).
 param(
   [Parameter(Mandatory = $true)]
   [ValidateSet('python', 'uv', 'node', 'git', 'gh', 'ffmpeg')]
@@ -11,19 +11,56 @@ param(
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+try {
+  [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls13
+} catch {}
+
+$USER_AGENT = 'StudioAISetup/2.0'
 
 function Write-Info([string]$Msg) {
   Write-Output "[StudioAISetup] $Msg"
+}
+
+function Assert-AuthenticodeValid([string]$FilePath, [string]$ToolName) {
+  if (-not (Test-Path -LiteralPath $FilePath)) {
+    throw "Khong tim thay tep cai dat de kiem tra chu ky so Authenticode cho $($ToolName): $FilePath"
+  }
+  $sig = $null
+  try {
+    $sig = Get-AuthenticodeSignature -FilePath $FilePath
+  } catch {
+    if (Test-Path -LiteralPath $FilePath) {
+      Remove-Item -LiteralPath $FilePath -Force -ErrorAction SilentlyContinue
+    }
+    throw "Khong doc duoc chu ky so Authenticode cho $($ToolName): $($_.Exception.Message)"
+  }
+  $status = if ($null -ne $sig -and $null -ne $sig.Status) { [string]$sig.Status } else { 'Unknown' }
+  $statusMsg = if ($null -ne $sig -and -not [string]::IsNullOrWhiteSpace([string]$sig.StatusMessage)) {
+    ([string]$sig.StatusMessage).Trim()
+  } else {
+    'Khong co thong diep trang thai'
+  }
+  if ($null -eq $sig -or $sig.Status -ne 'Valid' -or $null -eq $sig.SignerCertificate) {
+    if (Test-Path -LiteralPath $FilePath) {
+      Remove-Item -LiteralPath $FilePath -Force -ErrorAction SilentlyContinue
+    }
+    throw "Chu ky so Authenticode khong hop le cho $ToolName (Trang thai: $status - $statusMsg). Da xoa tep tam de bao ve may."
+  }
+  $subject = [string]$sig.SignerCertificate.Subject
+  if ([string]::IsNullOrWhiteSpace($subject)) {
+    $subject = [string]$sig.SignerCertificate.GetNameInfo([System.Security.Cryptography.X509Certificates.X509NameType]::SimpleName, $false)
+  }
+  Write-Info "Authenticode OK ($ToolName): $subject"
 }
 
 function TaiTepAnToan([string]$Url, [string]$DestPath) {
   if (-not $Url.StartsWith('https://', [StringComparison]::OrdinalIgnoreCase)) {
     throw "Chi cho phep tai tu dia chi HTTPS an toan: $Url"
   }
-  $curl = Get-Command 'curl.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+  $curl = Get-Command 'curl.exe' -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
   if ($curl -and $curl.Source) {
     Write-Info "Dang tai $Url (curl.exe)..."
-    & $curl.Source -fSL --retry 3 --connect-timeout 25 -sS -o $DestPath $Url
+    & $curl.Source -fSL --proto '=https' --proto-redir '=https' --tlsv1.2 --retry 3 --connect-timeout 25 -A $USER_AGENT -sS -o $DestPath $Url
     if ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath $DestPath) -and ((Get-Item -LiteralPath $DestPath).Length -gt 0)) {
       return
     }
@@ -36,7 +73,11 @@ function TaiTepAnToan([string]$Url, [string]$DestPath) {
   Write-Info "Dang tai $Url (WebClient)..."
   $wc = New-Object Net.WebClient
   try {
-    $wc.Headers.Add('User-Agent', 'StudioAISetup/1.0')
+    $wc.Proxy = [System.Net.WebRequest]::DefaultWebProxy
+    if ($wc.Proxy) {
+      $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials
+    }
+    $wc.Headers.Add('User-Agent', $USER_AGENT)
     $wc.DownloadFile($Url, $DestPath)
   } finally {
     $wc.Dispose()
@@ -48,45 +89,114 @@ function TaiTepAnToan([string]$Url, [string]$DestPath) {
 
 function Expand-ZipSafe([string]$ZipPath, [string]$DestDir) {
   Add-Type -AssemblyName System.IO.Compression.FileSystem
+  $maxEntries = 4096
+  $maxTotalBytes = [int64]536870912
+  $bufferSize = 65536
+  $reservedRx = '^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$'
+
   $destFull = [IO.Path]::GetFullPath($DestDir)
   $sep = [IO.Path]::DirectorySeparatorChar
   $destPrefix = $destFull.TrimEnd('\', '/') + $sep
-  [IO.Directory]::CreateDirectory($destFull) | Out-Null
+  $destExisted = Test-Path -LiteralPath $destFull
 
   $zip = [IO.Compression.ZipFile]::OpenRead($ZipPath)
   try {
+    if ($zip.Entries.Count -gt $maxEntries) {
+      throw "File nen vuot qua gioi han $maxEntries tep (thuc te: $($zip.Entries.Count))."
+    }
+
+    # Pass 1: Xac thuc toan bo entry truoc khi ghi bat ky tep nao xuong dia
+    $declaredTotal = [int64]0
+    $planned = New-Object 'System.Collections.Generic.List[hashtable]'
     foreach ($item in $zip.Entries) {
+      $rawName = [string]$item.FullName
+      if ($rawName.IndexOf([char]0) -ge 0) {
+        throw 'Ten tep khong hop le (ky tu NUL) trong file nen.'
+      }
       $posixMode = (($item.ExternalAttributes -shr 16) -band 0xF000)
       if ($posixMode -eq 0xA000) {
-        throw "Tu choi lien ket symlink trong file nen: $($item.FullName)"
+        throw "Tu choi lien ket symlink trong file nen: $rawName"
       }
-      $rel = ($item.FullName -replace '/', [string]$sep)
+      $rel = ($rawName -replace '/', [string]$sep)
       if ([IO.Path]::IsPathRooted($rel)) {
-        throw "Duong dan khong an toan trong file nen: $($item.FullName)"
+        throw "Duong dan khong an toan trong file nen: $rawName"
       }
+      $segments = $rawName -split '[/\\]'
+      foreach ($seg in $segments) {
+        if ([string]::IsNullOrEmpty($seg)) { continue }
+        if ($seg -eq '..') {
+          throw "Phat hien duong dan '..' trong file nen: $rawName"
+        }
+        if ($seg.IndexOf(':') -ge 0) {
+          throw "Phat hien ky tu ':' khong hop le trong file nen: $rawName"
+        }
+        $cleanSeg = $seg.TrimEnd(' ', '.')
+        $baseSeg = ($cleanSeg -split '\.')[0].ToUpperInvariant()
+        if ($baseSeg -match $reservedRx) {
+          throw "Tu choi ten thiet bi Windows cam trong file nen: $rawName"
+        }
+      }
+
       $targetFull = [IO.Path]::GetFullPath([IO.Path]::Combine($destFull, $rel))
       if (-not ($targetFull.Equals($destFull, [StringComparison]::OrdinalIgnoreCase) -or $targetFull.StartsWith($destPrefix, [StringComparison]::OrdinalIgnoreCase))) {
-        throw "Phat hien thoat thu muc trong file nen: $($item.FullName)"
+        throw "Phat hien thoat thu muc trong file nen: $rawName"
       }
-      if ($item.FullName.EndsWith('/') -or $item.FullName.EndsWith('\')) {
-        [IO.Directory]::CreateDirectory($targetFull) | Out-Null
-      } else {
-        $parentDir = [IO.Path]::GetDirectoryName($targetFull)
-        if ($parentDir) {
-          [IO.Directory]::CreateDirectory($parentDir) | Out-Null
+
+      $isDir = $rawName.EndsWith('/') -or $rawName.EndsWith('\')
+      if (-not $isDir) {
+        $declaredTotal += [int64]$item.Length
+        if ($declaredTotal -gt $maxTotalBytes) {
+          throw 'Tong kich thuoc khai bao trong file nen vuot qua gioi han 512 MiB.'
         }
-        $inStream = $item.Open()
-        try {
-          $outStream = [IO.File]::Open($targetFull, [IO.FileMode]::Create, [IO.FileAccess]::Write, [IO.FileShare]::None)
-          try {
-            $inStream.CopyTo($outStream)
-          } finally {
-            $outStream.Dispose()
+      }
+      $planned.Add(@{ entry = $item; target = $targetFull; isDir = $isDir })
+    }
+
+    # Pass 2: Giai nen bang vong lap bo dem 64 KB va chan tong byte thuc te > 512 MiB
+    [IO.Directory]::CreateDirectory($destFull) | Out-Null
+    $createdFiles = New-Object 'System.Collections.Generic.List[string]'
+    $streamedTotal = [int64]0
+    $buf = New-Object byte[] $bufferSize
+
+    try {
+      foreach ($p in $planned) {
+        if ($p.isDir) {
+          [IO.Directory]::CreateDirectory($p.target) | Out-Null
+        } else {
+          $parentDir = [IO.Path]::GetDirectoryName($p.target)
+          if ($parentDir) {
+            [IO.Directory]::CreateDirectory($parentDir) | Out-Null
           }
-        } finally {
-          $inStream.Dispose()
+          $inStream = $p.entry.Open()
+          try {
+            $outStream = [IO.File]::Open($p.target, [IO.FileMode]::Create, [IO.FileAccess]::Write, [IO.FileShare]::None)
+            $createdFiles.Add($p.target)
+            try {
+              while (($bytesRead = $inStream.Read($buf, 0, $buf.Length)) -gt 0) {
+                $streamedTotal += [int64]$bytesRead
+                if ($streamedTotal -gt $maxTotalBytes) {
+                  throw "Tong du lieu giai nen thuc te vuot qua gioi han 512 MiB ($maxTotalBytes bytes)."
+                }
+                $outStream.Write($buf, 0, $bytesRead)
+              }
+            } finally {
+              $outStream.Dispose()
+            }
+          } finally {
+            $inStream.Dispose()
+          }
         }
       }
+    } catch {
+      foreach ($f in $createdFiles) {
+        if (Test-Path -LiteralPath $f) {
+          Remove-Item -LiteralPath $f -Force -ErrorAction SilentlyContinue
+        }
+      }
+      if (-not $destExisted -and (Test-Path -LiteralPath $destFull)) {
+        Remove-Item -LiteralPath $destFull -Recurse -Force -ErrorAction SilentlyContinue
+      }
+      throw
     }
   } finally {
     $zip.Dispose()
@@ -171,9 +281,13 @@ try {
     }
     Write-Info "Da xac minh SHA-256 cho $Package ($($entry.version)): OK"
 
+    if ($kind -in @('python_exe', 'git_exe') -or $urlExt.Equals('.exe', [StringComparison]::OrdinalIgnoreCase)) {
+      Assert-AuthenticodeValid -FilePath $tmpFile -ToolName "$Package ($($entry.version))"
+    }
+
     switch ($kind) {
       'python_exe' {
-        Write-Info 'Dang cai dat Python 3.12 (che do im lang)...'
+        Write-Info "Dang cai dat Python $($entry.version) (che do im lang)..."
         $proc = Start-Process -FilePath $tmpFile -ArgumentList @('/quiet', 'InstallAllUsers=0', 'PrependPath=1', 'Include_test=0', 'Include_pip=1') -Wait -PassThru
         if ($proc.ExitCode -notin 0, 3010) {
           throw "Trinh cai Python tra ve ma loi $($proc.ExitCode)"

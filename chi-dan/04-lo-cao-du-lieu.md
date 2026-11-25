@@ -6,7 +6,7 @@ Tài liệu này giúp bạn khai thác bộ công cụ nghiên cứu thị trư
 
 ## 1. Trong Lô 4 Đã Cài Sẵn Cho Bạn Những Gì?
 - **`REA 6.10.1` (`rea-agents` MCP):** Công cụ mạnh mẽ chuyên phân tích cấu trúc ứng dụng, web bundle, tệp đóng gói Desktop/Android/SQLite ngay trong khung chat AI.
-- **`yt-dlp` (`2026.10.26`):** Lấy thông tin chi tiết, phụ đề, danh sách video công khai để nghiên cứu chủ đề và từ khóa.
+- **`yt-dlp` (`2026.11.23`):** Lấy thông tin chi tiết, phụ đề, danh sách video công khai để nghiên cứu chủ đề và từ khóa.
 - **`Trendspyg` (`1.9.0`):** Đo xu hướng tìm kiếm theo thời gian trên Google Search và YouTube Search (`--gprop youtube`).
 - **`MarkItDown` (`0.1.9`):** Chuyển đổi nhanh các tệp văn bản phức tạp (`.pdf`, `.docx`, `.xlsx`, `.pptx`, trang web HTML) sang Markdown sạch để AI đọc hiểu chính xác 100% mà không tốn dung lượng.
 

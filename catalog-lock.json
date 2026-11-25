@@ -1,8 +1,8 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "app_name": "Studio AI Setup",
-  "app_version": "1.0.0",
-  "reviewed_at": "2026-11-21",
+  "app_version": "2.0.0",
+  "reviewed_at": "2026-11-25",
   "lot0_core": {
     "python": {
       "winget_id": "Python.Python.3.12",
@@ -55,8 +55,10 @@
   "lot1_content": {
     "vietnamese_humanizer": {
       "repo": "https://github.com/longhang2004/vietnamese-humanizer",
-      "commit": "2fd7dd05cbd9c2b977bda9f5a0bcae301ffa5376",
-      "archive_url": "https://codeload.github.com/longhang2004/vietnamese-humanizer/zip/2fd7dd05cbd9c2b977bda9f5a0bcae301ffa5376",
+      "upstream_version": "0.7.0+",
+      "commit": "f6d54bdd627a167e2539558037b860c18f485513",
+      "archive_url": "https://codeload.github.com/longhang2004/vietnamese-humanizer/zip/f6d54bdd627a167e2539558037b860c18f485513",
+      "tree_sha256": "0910a16ef0f5acee8dc4f2ba3e3ddb8bbc10fc5384c2381caf9ab40bd7744a0a",
       "license": "MIT",
       "allowlist_paths": [
         "skills/humanizer-vi",
@@ -99,6 +101,7 @@
       "repo": "https://github.com/EditAtlas/skills",
       "commit": "75cee479db213ddd05cb5ceeeacd5c468419f443",
       "archive_url": "https://codeload.github.com/EditAtlas/skills/zip/75cee479db213ddd05cb5ceeeacd5c468419f443",
+      "tree_sha256": "5d0d8c55134eaef91041b8ec09b1de7cf7970874ae692938371e186f7401437e",
       "license": "MIT",
       "allowlist_skills": [
         "sound-design",
@@ -116,6 +119,7 @@
       "repo": "https://github.com/JuneYaooo/rea-video",
       "commit": "b08faf2eb53690fc92ddf94576a8c7c3a4a87f89",
       "archive_url": "https://codeload.github.com/JuneYaooo/rea-video/zip/b08faf2eb53690fc92ddf94576a8c7c3a4a87f89",
+      "tree_sha256": "9c2adb737715159f50713a5e0058a917c9ba4d2c1c6dba5e60a78c4f8fc0b8ee",
       "license": "MIT"
     },
     "media_python_deps": [
@@ -129,14 +133,14 @@
     ],
     "optional_openmontage": {
       "repo": "https://github.com/calesthio/OpenMontage",
-      "commit": "2e003e65fa99",
+      "commit": "2e003e65fa99a0f329478a2c1cdcf26bc481933a",
       "license": "AGPL-3.0",
       "default_enabled": false,
       "note": "Tùy chọn nâng cao · Studio dựng video AI tự động (~500 MB + cần API)"
     },
     "optional_assetfurnace": {
       "repo": "https://github.com/Bingeljell/image-to-3dlab",
-      "commit": "a319975821a6",
+      "commit": "a319975821a6437258cf299e8154aa286a63d9ad",
       "license": "Apache-2.0",
       "default_enabled": false,
       "requires_nvidia_gpu": true,
@@ -148,6 +152,7 @@
       "repo": "https://github.com/obra/superpowers.git",
       "commit": "22f0b463e7a5e579904dd6211a520321035526f7",
       "archive_url": "https://codeload.github.com/obra/superpowers/zip/22f0b463e7a5e579904dd6211a520321035526f7",
+      "tree_sha256": "456b7ccd6c0490e88113d8470315c0daa8fc5ea59aa25f7362403d37c1adf810",
       "license": "MIT"
     },
     "karpathy_guidelines": {
@@ -158,8 +163,8 @@
       "license": "MIT"
     },
     "modern_web_guidance": {
-      "npm_spec": "modern-web-guidance@1.0.1",
-      "version": "1.0.1",
+      "npm_spec": "modern-web-guidance@1.0.2",
+      "version": "1.0.2",
       "license": "Apache-2.0",
       "source": "https://developer.chrome.com/docs/modern-web-guidance",
       "repo": "https://github.com/GoogleChrome/modern-web-guidance-src"
@@ -177,7 +182,7 @@
       "source": "https://www.npmjs.com/package/rea-agents"
     },
     "yt_dlp": {
-      "pypi_spec": "yt-dlp==2026.10.26",
+      "pypi_spec": "yt-dlp==2026.11.23",
       "license": "Unlicense",
       "source": "https://github.com/yt-dlp/yt-dlp"
     },
@@ -193,10 +198,68 @@
     },
     "optional_agent_reach": {
       "repo": "https://github.com/Panniantong/Agent-Reach",
-      "commit": "c70ae6da5d39",
+      "commit": "8d9ecc1f5521fe7d223cde782aaa4005695e2671",
       "license": "MIT",
       "default_enabled": false,
       "note": "Tùy chọn nâng cao · Router tìm kiếm đa nền tảng"
+    }
+  },
+  "lot5_review": {
+    "egm": {
+      "repo": "https://github.com/google/elephant-goldfish-model",
+      "upstream_version": "0.1.1+egm-lite",
+      "commit": "63e239d8d4c3ddc6774faf533b4997405f78c549",
+      "archive_url": "https://codeload.github.com/google/elephant-goldfish-model/zip/63e239d8d4c3ddc6774faf533b4997405f78c549",
+      "tree_sha256": "256f12c520c543ca264f643a7a4b36d30db8bbbefa9a8352c32d220562b990d5",
+      "license": "Apache-2.0",
+      "source": "https://github.com/google/elephant-goldfish-model",
+      "disclaimer": "This is not an officially supported Google product.",
+      "antigravity_allowlist": [
+        "plugin.json",
+        "LICENSE",
+        "README.md",
+        "agents/*.md",
+        "assets/*.svg",
+        "assets/*.png",
+        "resources/*.md",
+        "resources/document_standards/*.md",
+        "skills/*/SKILL.md",
+        "skills/*/agents/openai.yaml",
+        "skills/*/assets/*.svg",
+        "skills/*/assets/*.png",
+        "skills/*/references/*.md",
+        "skills/*/references/*.json",
+        "docs/index.md",
+        "docs/getting_started.md",
+        "docs/harnesses.md",
+        "docs/claude.md",
+        "docs/codex.md",
+        "docs/faq.md",
+        "docs/privacy.md",
+        "docs/releases.md",
+        "docs/assets/*.svg",
+        "docs/assets/*.png"
+      ],
+      "unified_extra_allowlist": [
+        ".claude-plugin/plugin.json",
+        ".claude-plugin/marketplace.json",
+        ".claude-plugin/icon.png",
+        ".claude-plugin/agents/*.md",
+        ".codex-plugin/plugin.json",
+        ".agents/plugins/marketplace.json"
+      ],
+      "required_skills": [
+        "egm-bootstrap",
+        "egm-brainstorm",
+        "egm-draft",
+        "egm-drift-report",
+        "egm-lite",
+        "egm-resolve",
+        "egm-review",
+        "egm-review-loop"
+      ],
+      "required_agent_count": 10,
+      "required_standard_count": 5
     }
   }
 }

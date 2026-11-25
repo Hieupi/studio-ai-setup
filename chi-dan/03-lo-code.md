@@ -9,7 +9,7 @@ Bạn không cần phải biết lập trình sâu vẫn có thể tải các b�
 - **`Python` + `uv` + `Node.js LTS`:** Bộ nền tảng để chạy gần như toàn bộ các công cụ Python, giao diện web React/Next.js và công cụ dựng video Remotion.
 - **`Superpowers` (15 kỹ năng chuẩn):** Dạy AI thói quen làm việc bài bản: thảo luận rõ ý tưởng trước (`brainstorming`) → viết kế hoạch ngắn (`writing-plans`) → sửa lỗi có hệ thống (`systematic-debugging`) → kiểm tra chạy thật trước khi báo xong (`verification-before-completion`).
 - **4 Nguyên tắc Karpathy (`karpathy-guidelines`):** Giữ cho AI viết code gọn gàng, không tự ý đẻ ra tính năng thừa làm hỏng các phần đang chạy tốt.
-- **`Modern Web Guidance` (`1.0.1`, Chrome/Edge/Firefox/MDN):** Giúp AI tự tra cứu hơn 250 tính năng nền tảng web hiện đại khi bạn làm website, tránh viết code JavaScript/CSS cũ rườm rà.
+- **`Modern Web Guidance` (`1.0.2`, Chrome/Edge/Firefox/MDN):** Giúp AI tự tra cứu hơn 250 tính năng nền tảng web hiện đại khi bạn làm website, tránh viết code JavaScript/CSS cũ rườm rà.
 - **`Ruff` & `Pytest`:** Công cụ kiểm tra lỗi cú pháp và chạy test tự động cho các dự án Python.
 
 ---
@@ -19,7 +19,7 @@ Bạn không cần phải biết lập trình sâu vẫn có thể tải các b�
 Nếu bạn chưa quen dùng PowerShell, cứ làm chậm từng bước dưới đây (chỉ cần làm lần đầu):
 
 ### Bước 1: Đăng nhập GitHub (chỉ làm 1 lần)
-1. Nếu ở màn hình cài xong bạn đã bấm **`Đăng nhập GitHub`**, hãy bỏ qua bước này.
+1. Nếu ở màn hình cài xong bạn đã bấm **`Đăng nhập GitHub (Tải Kit)`**, hãy bỏ qua bước này.
 2. Nếu chưa, mở **PowerShell** và gõ:
    ```powershell
    gh auth login
@@ -56,6 +56,15 @@ Sau đó mở chính thư mục vừa tải về bằng trình biên tập AI (*
 
 ---
 
-## 4. Lưu Ý An Toàn Tài Khoản & API Key
+## 4. Phối Hợp Nhịp Nhàng: Karpathy → Superpowers → EGM
+
+Để vừa code chắc tay vừa không tốn quota thừa, bộ quy tắc đã nối sẵn 3 tầng kiểm soát chất lượng:
+- **Sửa nhỏ 1–2 tệp:** Chỉ dùng `karpathy-guidelines` để sửa gọn, không gọi thêm tác nhân phụ.
+- **Tính năng thường / sửa lỗi / viết test:** Để `superpowers` dẫn dắt từ lập kế hoạch đến kiểm thử thật.
+- **Thiết kế lớn, bảo mật, đổi cấu trúc dữ liệu hoặc cần mắt nhìn khách quan rà lỗ hổng:** Chuyển lên **Lô 5 · EGM** — bắt đầu bằng `/egm:egm-lite` (nhanh, tiết kiệm) hoặc `/egm:egm-review <file>` (5 vòng chuyên sâu). Xem hướng dẫn đầy đủ tại [`05-lo-phan-bien-egm.md`](05-lo-phan-bien-egm.md).
+
+---
+
+## 5. Lưu Ý An Toàn Tài Khoản & API Key
 - **Tuyệt đối không** dán API Key, mật khẩu, cookie trình duyệt trực tiếp vào các tệp code rồi đẩy lên GitHub công khai.
 - Các thông tin bí mật luôn đặt trong tệp `.env` (tệp này thường đã được `.gitignore` ẩn đi).
